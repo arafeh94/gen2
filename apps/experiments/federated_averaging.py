@@ -1,9 +1,8 @@
 import logging
 import sys
 
-from src.federated.subscribers.fed_plots import RoundAccuracy
-
 sys.path.append('../../')
+from src.federated.subscribers.fed_plots import RoundAccuracy
 from libs.model.linear.lr import LogisticRegression
 from src.federated.components.client_scanners import DefaultScanner
 from src.federated.events import Events
@@ -19,7 +18,7 @@ from src.federated.components.trainer_manager import SeqTrainerManager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('main')
 
-client_data = preload('cifar10', UniqueDistributor(3, 50, 50))
+client_data = preload('mnist', UniqueDistributor(3, 50, 50))
 
 # trainers configuration
 trainer_params = TrainerParams(
@@ -31,12 +30,12 @@ trainer_params = TrainerParams(
 federated = FederatedLearning(
     trainer_manager=SeqTrainerManager(),
     trainer_config=trainer_params,
-    aggregator=aggregators.OsamaAggregator(),
+    aggregator=aggregators.AVGAggregator(),
     metrics=metrics.AccLoss(batch_size=0, criterion='cel'),
     client_scanner=DefaultScanner(client_data),
     client_selector=client_selectors.Random(2),
     trainers_data_dict=client_data,
-    initial_model=lambda: LogisticRegression(32 * 32 * 3, 3),
+    initial_model=lambda: LogisticRegression(784, 10),
     num_rounds=100,
     desired_accuracy=0.99
 )

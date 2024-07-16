@@ -164,6 +164,6 @@ if __name__ == '__main__':
     code_exp = ['split', 'splitfed', '1layer', '2layers_selection', '2layers_selection_v1',
                 '2layers_standard', '2layers_standard_v1']
     # ss = collect({'tag': 'exp1', 'name': lambda x: x != './split.py'})
-    ss = collect({'tag': 'exp1'})
+    ss = collect({'tag': 'cifar_exo05'})
 
     standard(ss)

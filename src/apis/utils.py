@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import random
+import sys
 import time
 import typing
 from collections import Counter, defaultdict
@@ -17,6 +18,7 @@ from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.decomposition import PCA
 
 from src.apis.extensions import Dict
+from src.manifest import ROOT_PATH
 
 logger = logging.getLogger('utils')
 
@@ -378,3 +380,11 @@ class TimeCheckpoint:
         if index is None:
             return self.checkpoint()
         return self.times[index]
+
+
+def venv():
+    if sys.platform == 'win32':
+        venv_python = os.path.join(ROOT_PATH, 'venv', 'Scripts', 'python.exe')
+    else:
+        venv_python = os.path.join(ROOT_PATH, 'venv', 'bin', 'python')
+    return venv_python

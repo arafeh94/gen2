@@ -1,6 +1,10 @@
 import json
 import logging
 import subprocess
+import sys
+
+
+sys.path.append('../../')
 
 from apps.donotuse.split_learning import models
 from src.apis import utils, lambdas
@@ -66,5 +70,5 @@ if __name__ == '__main__':
         logger.error('--------------Starting {} Execution--------------'.format(path))
         track_params = ['rounds', 'lr_client', 'lr_server', 'cls_speeds', 'out_size', 'bad_ratio', 'dt_tag']
         configs = json.dumps({'name': path, 'tag': 'cifar_exo05', **global_configs.select(track_params)})
-        subprocess.run(["C:/Users/mhara/OneDrive/Documents/Projects/geneticfed/venv/Scripts/python.exe", path, configs])
+        subprocess.run([utils.venv(), path, configs])
         logger.error('--------------{} Finished Execution--------------'.format(path))
