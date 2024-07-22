@@ -7,6 +7,9 @@ import random
 import sys
 from collections import defaultdict
 
+sys.path.append('../../')
+
+
 from apps.splitfed_v2._run_configs import global_configs
 from apps.splitfed_v2.core import splitlearn
 from apps.splitfed_v2.core.server import Server
@@ -25,6 +28,7 @@ logger = SQLiteLogger.new_instance('splitlearn_v2_1.sqlite', configs)
 printer = logging.getLogger('2layers_selection_v1')
 # configs
 rounds = configs.get('rounds', global_configs['rounds'])
+epoch = configs.get('epoch', global_configs['epoch'])
 client_model = global_configs['client_model']
 server_model = global_configs['server_model']
 model = global_configs['model']
@@ -64,7 +68,7 @@ for round_id in range(rounds):
         for rs_key, outer in double_clustered.items():
             run_clusters.append(outer[speed_idx])
         stats = splitlearn.one_round_resource(run_clusters, servers[speed_idx], is_selection=True,
-                                          bad_ratio=global_configs['bad_ratio'])
+                                              bad_ratio=global_configs['bad_ratio'], epoch=epoch)
         stats['speed'] = speed_idx
         stats['round_num'] = round_id
         stats['iter_num'] = itero.counter()

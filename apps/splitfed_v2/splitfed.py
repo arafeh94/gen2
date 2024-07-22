@@ -5,6 +5,8 @@ import random
 import sys
 from collections import defaultdict
 
+sys.path.append('../../')
+
 from apps.splitfed_v2._run_configs import global_configs
 from apps.splitfed_v2.core import splitlearn
 from apps.splitfed_v2.core.clusters import Cluster
@@ -12,9 +14,6 @@ from apps.splitfed_v2.core.server import Server
 from apps.splitfed_v2.core.splitlearn import ClsIterator, cluster, get_clients
 from src.apis import utils
 from src.apis.extensions import Dict
-from src.data.data_distributor import ShardDistributor
-from src.data.data_loader import preload
-from apps.donotuse.split_learning import models
 from src.federated.subscribers.sqlite_logger import SQLiteLogger
 
 utils.enable_logging(level=logging.ERROR)
@@ -26,6 +25,7 @@ printer = logging.getLogger('splitfed')
 rounds = configs.get('rounds', global_configs['rounds'])
 client_model = global_configs['client_model']
 server_model = global_configs['server_model']
+epoch = configs.get('epoch', global_configs['epoch'])
 model = global_configs['model']
 mnist = global_configs['train']
 test_data = global_configs['test']
@@ -43,7 +43,7 @@ history = defaultdict(dict)
 internal_counter = 0
 for round_id in range(rounds):
     stats = splitlearn.one_round_resource([one_cluster], one_server, is_parallel=True, is_selection=False,
-                                          bad_ratio=global_configs['bad_ratio'])
+                                          bad_ratio=global_configs['bad_ratio'], epoch=epoch)
     stats['speed'] = 1
     stats['round_num'] = round_id
     stats['iter_num'] = round_id

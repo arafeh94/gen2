@@ -41,13 +41,13 @@ global_configs = Dict({
     'lr_client': 0.001,
     'lr_server': 0.001,
     'batch': 0,
+    'epoch': 1,
     # 'client_model': models.MnistClient(784, 1024, 10),
     # 'server_model': models.MnistServer(784, 1024, 10),
     # 'model': models.MnistNet(784, 1024, 10),
     'client_model': models.CifarClient2(),
     'server_model': models.CifarServer2(),
     'model': models.CifarModel2(),
-    # 'train': preload('mnist', ShardDistributor(300, 2)),
     'train': train,
     'test': test,
     'cls_speeds': [.1, .25, 1],
@@ -61,14 +61,14 @@ if __name__ == '__main__':
         # './sfed.py',
         # './split.py',
         # './splitfed.py',
-        # './splitfed1layer.py',
+        './splitfed1layer.py',
         # './splitfed2layers_selection.py',
-        './splitfed2layers_standard.py',
+        # './splitfed2layers_standard.py',
     ]
     logger = logging.getLogger('_run')
     for path in runs:
         logger.error('--------------Starting {} Execution--------------'.format(path))
         track_params = ['rounds', 'lr_client', 'lr_server', 'cls_speeds', 'out_size', 'bad_ratio', 'dt_tag']
-        configs = json.dumps({'name': path, 'tag': 'cifar_exo05', **global_configs.select(track_params)})
+        configs = json.dumps({'name': path, 'tag': 'cifar_temp', **global_configs.select(track_params)})
         subprocess.run([utils.venv(), path, configs])
         logger.error('--------------{} Finished Execution--------------'.format(path))

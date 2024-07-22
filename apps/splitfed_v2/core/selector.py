@@ -2,6 +2,7 @@ import json
 import math
 import os
 import pickle
+import random
 import time
 import typing
 
@@ -21,11 +22,14 @@ from src import manifest
 from src.apis import utils
 
 
-def client_selection(cls):
+def client_selection(cls, is_random, random_size=0.4):
     reset_selection(cls)
     for cluster in cls:
         cluster: Cluster
-        heuristic_selection(cluster)
+        if is_random:
+            random_selection(cluster, random_size)
+        else:
+            heuristic_selection(cluster)
     return cls
 
 
@@ -53,6 +57,15 @@ def heuristic_selection(one_cluster: Cluster):
     best, solutions = alg_genetic.ga(fitness.evaluate, cluster_selector, 99999999, 50, c_size=c_size, p_size=20)
     clients = fitness.map_selection2(best)
     for client in clients:
+        client.is_trainable = True
+
+
+def random_selection(one_cluster: Cluster, size=0.1):
+    deny_all(one_cluster)
+    selection_size = int(size * len(one_cluster.clients))
+    selection_size = 1 if selection_size < 1 else selection_size
+    selected_clients = random.sample(one_cluster.clients, selection_size)
+    for client in selected_clients:
         client.is_trainable = True
 
 

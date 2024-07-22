@@ -20,14 +20,15 @@ from src.apis.extensions import LinkedList, Node, CycleList
 from src.apis.federated_tools import aggregate, asyncgregate
 
 
-def one_round(cls, srvr):
+def one_round(cls, srvr, epoch=1):
     random.shuffle(cls)
     for client_cluster in cls:
         client_cluster.update_model(srvr.client_model)
         for client in client_cluster.get_trainers():
-            out, labels = client.local_train()
-            grad = srvr.train(out, labels)
-            client.backward(grad)
+            for _ in range(epoch):
+                out, labels = client.local_train()
+                grad = srvr.train(out, labels)
+                client.backward(grad)
         weights = funcs.as_dict([c.model.state_dict() for c in client_cluster.clients])
         cls_samples = funcs.as_dict([len(c) for c in client_cluster.clients])
         avg_weights = aggregate(weights, cls_samples)
@@ -36,7 +37,7 @@ def one_round(cls, srvr):
     return srvr.infer()
 
 
-def one_round_async(cls, srvr: Server):
+def one_round_async(cls, srvr: Server, epoch=1):
     srvr.client_model = srvr.client_model.to('cuda')
     srvr.server_model = srvr.server_model.to('cuda')
     random.shuffle(cls)
@@ -44,11 +45,12 @@ def one_round_async(cls, srvr: Server):
         client_cluster.update_model(srvr.client_model)
         train_servers = []
         for client in client_cluster.get_trainers():
-            train_srvr = srvr.copy()
-            train_servers.append(train_srvr)
-            out, labels = client.local_train()
-            grad = train_srvr.train(out, labels)
-            client.backward(grad)
+            for _ in range(epoch):
+                train_srvr = srvr.copy()
+                train_servers.append(train_srvr)
+                out, labels = client.local_train()
+                grad = train_srvr.train(out, labels)
+                client.backward(grad)
         cls_weights = funcs.as_dict([c.model.state_dict() for c in client_cluster.clients])
         cls_samples = funcs.as_dict([len(c) for c in client_cluster.clients])
         srv_weights = funcs.as_dict([c.server_model.state_dict() for c in train_servers])
@@ -60,16 +62,14 @@ def one_round_async(cls, srvr: Server):
     return srvr.infer()
 
 
-def one_round_resource(cls, srvr, is_parallel=True, is_selection=True, bad_ratio=.05):
+def one_round_resource(cls, srvr, is_parallel=True, is_selection=True, bad_ratio=.05, epoch=1):
     clusters_time = []
     cluster_clients_time = []
     cluster_clients_size = []
     for client_cluster in cls:
-        # cls_len = len(client_cluster.clients)
-        # performance = PerformanceArrays.n_bad(cls_len, math.ceil(cls_len * .25))
         for idx, client in enumerate(client_cluster.clients):
             client.randomize_resources(upto=PerformanceArrays.bad_roulette(bad_ratio))
-    cls = client_selection(cls) if is_selection else cls
+    cls = client_selection(cls, is_random=not is_selection)
     for client_cluster in cls:
         clients_time = {}
         for client in client_cluster.clients:
@@ -79,32 +79,11 @@ def one_round_resource(cls, srvr, is_parallel=True, is_selection=True, bad_ratio
         clusters_time.append(time_taken)
         cluster_clients_time.append(clients_time)
         cluster_clients_size.append(len(clients_time))
-    accuracy, loss = one_round_async(cls, srvr) if is_parallel else one_round(cls, srvr)
-    # accuracy, loss = one_round(cls, srvr)
+    accuracy, loss = one_round_async(cls, srvr, epoch) if is_parallel else one_round(cls, srvr, epoch)
     return {'acc': accuracy, 'loss': loss, 'round_time': sum(clusters_time), 'clusters_time': clusters_time,
             'clients_time': str(cluster_clients_time), 'cluster_selection_size': str(cluster_clients_size)}
 
 
-# def DoubleClusteredSplitFed(clients):
-#     one_epoch_training(clients.models)
-#     update_resource_capacities(clients)
-# 	out_clusters = iid_clustering(clients.models)
-# 	for out_cluster, clients in out_clusters:
-# 		out_cluster.in_clusters = resource_clustering(clients.resources)
-# 	for i in rounds:
-# 		out_cluster = shuffle_select_next_cluster()
-# 		while out_cluster:
-# 			for in_cluster in out_cluster.in_clusters: \\In parallel
-# 				update_available_resources(in_cluster.clients)
-# 				selected_clients = selection(in_cluster.clients)
-# 				for client, server in selected_clients: \\In parallel
-# 					client.feed_forward()
-# 					server.feed_forward()
-# 					server.backpropagate()
-# 					client.backpropage()
-# 					client.optimizer.step()
-# 				async_aggregate(out_cluster.model, in_cluster.clients)
-# 			out_cluster = shuffle_select_next_cluster()
 def crossgregate(advanced, late, staled_round):
     """
     Args:

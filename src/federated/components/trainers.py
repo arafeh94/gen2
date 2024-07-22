@@ -67,13 +67,3 @@ class TorchChunkTrainer(TorchTrainer):
         chunk = DataContainer(x, y)
         return super(TorchChunkTrainer, self).train(model, chunk, context, config)
 
-
-class SelfishTrainer(TorchTrainer):
-    def __init__(self, howSelfishAmI):
-        super().__init__()
-        self.howSelfishAmI = howSelfishAmI
-
-    def train(self, model: nn.Module, train_data: DataContainer, context: FederatedLearning.Context,
-              config: TrainerParams) -> Tuple[any, int]:
-        # train_data = use self.howSelfishAmI to update the train_data for a new one
-        return super(SelfishTrainer, self).train(model, train_data, context, config)
