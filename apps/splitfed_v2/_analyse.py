@@ -8,7 +8,7 @@ from src.apis import utils
 from src.apis.db_graph_tools import Graphs
 from src.apis.fed_sqlite import FedDB
 
-graphs = Graphs(FedDB('dd.sqlite'))
+graphs = Graphs(FedDB('splitlearn_v2.sqlite'))
 
 ax_configs = {
     './sfed.py': {'color': 'm', 'label': 'Fed', 'linestyle': "-", 'linewidth': 3.2},
@@ -163,8 +163,12 @@ def standard(ss):
 if __name__ == '__main__':
     code_exp = ['split', 'splitfed', '1layer', '2layers_selection', '2layers_selection_v1',
                 '2layers_standard', '2layers_standard_v1']
+    # mnist
+    # ss = collect({'tag': 'exp1'})
     # ss = collect({'tag': 'exp1', 'name': lambda x: x != './split.py'})
-    ss = collect({'tag': 'cifar_exo07'})
-    acc(generate_exps(ss), utils.smooth)
+
+    # cifar
+    ss = collect({'tag': 'cifar_exo1'})
+    standard(ss)
 
     # standard(ss)

@@ -24,7 +24,7 @@ np.seterr(divide='ignore', invalid='ignore')
 utils.enable_logging(level=logging.ERROR)
 random.seed(42)
 configs = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {'name': '2layers_selection'}
-logger = SQLiteLogger.new_instance('splitlearn_v2_1.sqlite', configs)
+logger = SQLiteLogger.new_instance('splitlearn_v2.sqlite', configs)
 printer = logging.getLogger('2layers_selection')
 # configs
 rounds = configs.get('rounds', global_configs['rounds'])

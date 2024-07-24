@@ -20,7 +20,7 @@ utils.enable_logging(level=logging.ERROR)
 random.seed(42)
 configs = Dict(json.loads(sys.argv[1])) if len(sys.argv) > 1 else Dict({'name': 'split'})
 print(configs)
-logger = SQLiteLogger.new_instance('splitlearn_v2_1.sqlite', configs)
+logger = SQLiteLogger.new_instance('splitlearn_v2.sqlite', configs)
 printer = logging.getLogger('split')
 # configs
 rounds = configs.get('rounds', global_configs['rounds'])

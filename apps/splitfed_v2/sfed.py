@@ -30,10 +30,11 @@ logger = SQLiteLogger.new_instance('splitlearn_v2_1.sqlite', configs)
 printer = logging.getLogger('federated')
 # configs
 rounds = configs.get('rounds', global_configs['rounds'])
+epochs = configs.get('epochs', global_configs['epoch'])
 batch = configs.get('batch', global_configs['batch'])
 client_model = global_configs['client_model']
 server_model = global_configs['server_model']
-full_model = global_configs['model']
+model = global_configs['model']
 mnist = global_configs['train']
 test_data = global_configs['test']
 cluster_speeds = global_configs['cls_speeds']
@@ -42,23 +43,22 @@ lr_client = global_configs['lr_client']
 lr_server = global_configs['lr_server']
 
 double_clustered = get_clients(mnist, out_clusters, cluster_speeds, client_model, lr=lr_client,
-                               dataset_path=global_configs['dt_tag'])
-
+                               id_model=model, dataset_path=global_configs['dt_tag'])
 
 clients = splitlearn.clients1d(double_clustered)
 clients_data = {i: clients[i].data for i in range(len(clients))}
 
 trainer_manager = SeqTrainerManager()
-trainer_params = TrainerParams(trainer_class=TorchTrainer, optimizer='sgd', epochs=1, batch_size=batch, criterion='cel',
-                               lr=lr_server)
+trainer_params = TrainerParams(trainer_class=TorchTrainer, optimizer='sgd', epochs=epochs, batch_size=batch,
+                               criterion='cel', lr=lr_server)
 federated = FederatedLearning(
     trainer_manager=trainer_manager,
     trainer_config=trainer_params,
     aggregator=aggregators.AVGAggregator(),
     metrics=metrics.AccLoss(batch_size=batch, criterion='cel'),
-    client_selector=client_selectors.Random(0.1),
+    client_selector=client_selectors.All(),
     trainers_data_dict=clients_data,
-    initial_model=full_model,
+    initial_model=model,
     num_rounds=rounds,
 )
 FederatedLogger([Events.ET_TRAINER_SELECTED, Events.ET_ROUND_FINISHED]).attach(federated)
@@ -69,5 +69,3 @@ printer.info("----------------------")
 printer.info(f"start federated genetics")
 printer.info("----------------------")
 federated.start()
-
-

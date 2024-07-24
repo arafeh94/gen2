@@ -20,7 +20,7 @@ from src.data.data_loader import preload
 # (!3) run federated alone separately
 
 
-dataset_name = 'cifar10'
+dataset_name = 'mnist'
 if dataset_name == 'cifar10':
     def loader(t_dataset):
         t_dataset = t_dataset.reshape((-1, 32, 32, 3)).transpose((0, 3, 1, 2))
@@ -42,26 +42,26 @@ global_configs = Dict({
     'lr_server': 0.001,
     'batch': 0,
     'epoch': 1,
-    # 'client_model': models.MnistClient(784, 1024, 10),
-    # 'server_model': models.MnistServer(784, 1024, 10),
-    # 'model': models.MnistNet(784, 1024, 10),
-    'client_model': models.CifarClient2(),
-    'server_model': models.CifarServer2(),
-    'model': models.CifarModel2(),
+    'client_model': models.MnistClient(784, 1024, 10),
+    'server_model': models.MnistServer(784, 1024, 10),
+    'model': models.MnistNet(784, 1024, 10),
+    # 'client_model': models.CifarClient2(),
+    # 'server_model': models.CifarServer2(),
+    # 'model': models.CifarModel2(),
     'train': train,
     'test': test,
     'cls_speeds': [.1, .25, 1],
     'out_size': 3,
     'bad_ratio': .05,
-    'dt_tag': f'{dataset_name}_dir2',
+    'dt_tag': f'{dataset_name}_dir',
 })
 
 if __name__ == '__main__':
     runs = [
-        # './sfed.py',
+        './sfed.py',
         # './split.py',
         # './splitfed.py',
-        './splitfed1layer.py',
+        # './splitfed1layer.py',
         # './splitfed2layers_selection.py',
         # './splitfed2layers_standard.py',
     ]

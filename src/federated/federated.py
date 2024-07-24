@@ -84,6 +84,7 @@ class FederatedLearning(Broadcaster):
         self.broadcast(Events.ET_ROUND_START, round=self.context.round_id)
         available_clients = list(self.trainer_manager.scanner.scan().keys())
         trainers_ids = self.client_selector.select(available_clients, self.context)
+        self.context.store(selected=trainers_ids)
         if len(trainers_ids) > 0:
             self.broadcast(Events.ET_TRAINER_SELECTED, trainers_ids=trainers_ids)
             trainers_train_data = self.trainers_train.select(trainers_ids)
@@ -134,10 +135,11 @@ class FederatedLearning(Broadcaster):
             local_loss = {}
             sample_size = {}
             for trainer_id, test_data in test_data.items():
-                acc, loss = self.metrics.infer(model, test_data)
-                local_accuracy[trainer_id] = acc
-                local_loss[trainer_id] = loss
-                sample_size[trainer_id] = len(test_data)
+                if trainer_id in self.context.last_entry()['selected']:
+                    acc, loss = self.metrics.infer(model, test_data)
+                    local_accuracy[trainer_id] = acc
+                    local_loss[trainer_id] = loss
+                    sample_size[trainer_id] = len(test_data)
             weighted_accuracy = [local_accuracy[tid] * sample_size[tid] for tid in local_accuracy]
             weighted_loss = [local_loss[tid] * sample_size[tid] for tid in local_loss]
             total_accuracy = sum(weighted_accuracy) / sum(sample_size.values())

@@ -50,3 +50,4 @@ logger.info("------------------------")
 logger.info("start federated learning")
 logger.info("------------------------")
 federated.start()
+federated.context.history[round_num]['backdoor']
