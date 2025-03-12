@@ -67,7 +67,8 @@ class SeqRandomClientSelector(SelectIterator):
 
 
 class SeqGAClientSelector(SelectIterator):
-    def __init__(self, train_clients: dict, selection_size, nb_clusters, buffer):
+    def __init__(self, train_clients: dict, selection_size, nb_clusters, buffer, max_iter=50, p_size=200, cross=0.1,
+                 mut=0.05):
         super().__init__(train_clients)
         self.clusters = {}
         self.already_selected_clients = []
@@ -75,6 +76,10 @@ class SeqGAClientSelector(SelectIterator):
         self.selection_size = selection_size
         self.nb_clusters = nb_clusters
         self.buffer = buffer
+        self.max_iter = max_iter
+        self.cross = cross
+        self.p_size = p_size
+        self.mut = mut
 
     def build(self, base_model):
         self.cluster_creator = ClusterCreator(self.train_clients, base_model)
@@ -107,8 +112,9 @@ class SeqGAClientSelector(SelectIterator):
     def reset(self):
         buffer_clusters = self.proba_buffer() if self.buffer == 'proba' else self.pop_buffer()
         cluster_selector = alg_genetic.ClusterSelector(buffer_clusters)
-        self.idle_buffer, _ = alg_genetic.ga(self.fitness, cluster_selector, -999, 50, c_size=self.selection_size,
-                                             post_fitness=self.post_fitness)
+        self.idle_buffer, _ = alg_genetic.ga(self.fitness, cluster_selector, -999, self.max_iter,
+                                             c_size=self.selection_size, post_fitness=self.post_fitness,
+                                             r_cross=self.cross, r_mut=self.mut, p_size=self.p_size)
         self.already_selected_clients.extend(self.idle_buffer)
         utils.shuffle(self.idle_buffer)
         logger.info(f"selected_clients: {self.idle_buffer}")
@@ -143,7 +149,8 @@ class SeqGAClientSelector(SelectIterator):
 
 def create(sid, train_clients, config):
     if sid == 'ga':
-        return SeqGAClientSelector(train_clients, config.wmp.cr, config.wmp.cls, config.wmp.buffer)
+        return SeqGAClientSelector(train_clients, config.wmp.cr, config.wmp.cls, config.wmp.buffer, config.wmp.max_iter,
+                                   config.wmp.p_size, config.wmp.cross, config.wmp.mut)
     elif sid == 'rn':
         return SeqRandomClientSelector(train_clients, config.wmp.cr)
     else:

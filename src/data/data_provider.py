@@ -17,7 +17,7 @@ logger = logging.getLogger('data_provider')
 
 class DataProvider:
     @abstractmethod
-    def collect(self, args) -> DataContainer:
+    def collect(self, **args) -> DataContainer:
         pass
 
 

@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from src.data.data_loader import preload
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 
 def as_dict(items: list):
@@ -64,4 +65,32 @@ def infer(server_model, client_model, data):
         return test_accuracy, val_loss
 
 
+def infer2(server_model, client_model, data):
+    client_model.eval()
+    server_model.eval()
+    device = torch.device('cuda')
+    criterion = nn.CrossEntropyLoss()
 
+    with torch.no_grad():
+        corr_num = 0
+        total_num = 0
+        val_loss = 0.0
+        val_x, val_label = data.x, data.y
+        val_x = val_x.to(device)
+        val_label = val_label.clone().detach().long().to(device)
+
+        val_output = client_model(val_x)
+        val_output = server_model(val_output)
+        loss = criterion(val_output, val_label)
+        val_loss += loss.item()
+        model_label = val_output.argmax(dim=1)
+        corr = val_label[val_label == model_label].size(0)
+        corr_num += corr
+        total_num += val_label.size(0)
+        test_accuracy = corr_num / total_num
+
+        precision = precision_score(val_label.cpu(), model_label.cpu(), average="weighted", zero_division=0)
+        recall = recall_score(val_label.cpu(), model_label.cpu(), average="weighted", zero_division=0)
+        f1 = f1_score(val_label.cpu(), model_label.cpu(), average="weighted", zero_division=0)
+
+        return test_accuracy, val_loss, precision, recall, f1

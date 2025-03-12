@@ -3,6 +3,8 @@ import typing
 import numpy as np
 import torch
 import tqdm
+from matplotlib import pyplot as plt
+from sklearn.metrics import precision_score, recall_score, f1_score
 from torch import nn
 import logging
 from src.data.data_container import DataContainer
@@ -97,6 +99,75 @@ def infer(model, test_data, transformer=None):
     return test_acc / test_total, test_loss / test_total
 
 
+def infer2(model, batched, **kwargs):
+    verbose = kwargs.get('verbose', 1)
+    device = kwargs['device'] if 'device' in kwargs else ('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    model.eval()
+    test_loss = test_acc = test_total = 0.
+    criterion = nn.CrossEntropyLoss() if 'criterion' not in kwargs else kwargs['criterion']
+
+    all_targets = []
+    all_predictions = []
+
+    with torch.no_grad():
+        iterator = tqdm.tqdm(enumerate(batched), 'inferring', disable=verbose == 0)
+        for batch_idx, (x, target) in iterator:
+            x = x.to(device)
+            target = target.to(device)
+            pred = model(x)
+            loss = criterion(pred, target)
+            _, predicted = torch.max(pred, -1)
+            correct = predicted.eq(target).sum()
+
+            test_acc += correct.item()
+            test_loss += loss.item() * target.size(0)
+            test_total += target.size(0)
+
+            all_targets.extend(target.cpu().numpy())
+            all_predictions.extend(predicted.cpu().numpy())
+
+    accuracy = test_acc / test_total
+    avg_loss = test_loss / test_total
+
+    precision = precision_score(all_targets, all_predictions, average='weighted')
+    recall = recall_score(all_targets, all_predictions, average='weighted')
+    f1 = f1_score(all_targets, all_predictions, average='weighted')
+
+    return accuracy, avg_loss, {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
+
+
+def confusion_matrix(model, batched, **kwargs):
+    verbose = kwargs.get('verbose', 1)
+    device = kwargs['device'] if 'device' in kwargs else ('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    model.eval()
+    test_loss = test_acc = test_total = 0.
+    criterion = nn.CrossEntropyLoss() if 'criterion' not in kwargs else kwargs['criterion']
+
+    all_targets = []
+    all_predictions = []
+
+    with torch.no_grad():
+        iterator = tqdm.tqdm(enumerate(batched), 'inferring', disable=verbose == 0)
+        for batch_idx, (x, target) in iterator:
+            x = x.to(device)
+            target = target.to(device)
+            pred = model(x)
+            loss = criterion(pred, target)
+            _, predicted = torch.max(pred, -1)
+            correct = predicted.eq(target).sum()
+
+            test_acc += correct.item()
+            test_loss += loss.item() * target.size(0)
+            test_total += target.size(0)
+
+            all_targets.extend(target.cpu().numpy())
+            all_predictions.extend(predicted.cpu().numpy())
+
+    return all_targets, all_predictions
+
+
 def load(model, stats):
     model.load_state_dict(stats)
 
@@ -122,3 +193,35 @@ def detail(client_data: typing.Union[typing.Dict[int, DataContainer], DataContai
             percentage = unique_count / len(data.y) * 100
             percentage = int(percentage)
             display(f"labels_{unique}= {percentage}% - {unique_count}")
+
+
+def plot(tests: typing.Dict[str, typing.List[float]]):
+    markers = ['o', 's', 'D', '^', 'v', 'p', '*']
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+    i = 0
+    for name, acc in tests.items():
+        plt.plot(range(len(acc)), acc, label=f'Model {name}', marker=markers[i % len(markers)],
+                 color=colors[i % len(colors)])
+        i += 1
+
+    plt.xlabel('Round')
+    plt.ylabel('Accuracy')
+    plt.tight_layout()
+    plt.show()
+
+
+def compare(m1, m2):
+    """
+
+    Args:
+        m1: first network
+        m2: second network
+
+    Returns: true if same, false otherwise
+
+    """
+    state_a = m1.state_dict().__str__()
+    state_b = m2.state_dict().__str__()
+
+    return state_a == state_b

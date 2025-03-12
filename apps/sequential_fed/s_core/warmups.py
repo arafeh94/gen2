@@ -38,7 +38,7 @@ def sequential_warmup_op(model, rounds, train_clients: dict, test_dataset: DataC
             if k == rounds - 1:
                 last_round_trainers.append(trainer.copy())
         selector.reset()
-        test_acc = trainer.infer(test_dataset.batch(), verbose=0)
+        test_acc = trainer.infer2(test_dataset.batch(), verbose=0)
         total_accs.append(test_acc)
         logger.info(f"Test Accuracy: {test_acc}")
         times.append(timer.cp())
@@ -49,7 +49,7 @@ def sequential_warmup_op(model, rounds, train_clients: dict, test_dataset: DataC
         models_sizes[i] = 1
     weights = federated_tools.aggregate(models_states, models_sizes)
     trainer.load(weights)
-    total_accs.append(trainer.infer(test_dataset.batch(), verbose=0))
+    total_accs.append(trainer.infer2(test_dataset.batch(), verbose=0))
     times.append(timer.cp())
     return weights, total_accs, times, selector
 
@@ -61,7 +61,7 @@ def original_warmup(warmup_ratio, train_data, test_data, model, epochs=500, lr=0
     train_data = train_data.map(lambdas.as_numpy).map(lambda cid, dt: dt.concat(warmup_data))
     initial_model = TorchModel(copy.deepcopy(model))
     weights, test_acc = initial_model.train(warmup_data.as_tensor().batch(), epochs=epochs, verbose=1, lr=lr)
-    acc_loss = initial_model.infer(test_data.batch(), verbose=0)
+    acc_loss = initial_model.infer2(test_data.batch(), verbose=0)
     return train_data.map(lambdas.as_tensor), weights, test_acc, acc_loss
 
 
@@ -77,6 +77,6 @@ def ewc_warmup(clients, model, rounds, wp_epochs, test_dataset, lr=0.0001, weigh
             trainer_id = selector.get_id()
             ewc.train(clients[trainer_id], epochs=wp_epochs)
         selector.reset()
-        acc.append(federated_tools.infer(ewc.model, test_dataset.batch()))
+        acc.append(federated_tools.infer2(ewc.model, test_dataset.batch()))
         times.append(timer.cp())
     return ewc, acc, times, selector

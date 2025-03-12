@@ -1,6 +1,6 @@
 from apps.sequential_fed.configs import fed_config
-from apps.sequential_fed.main_def import run
-from src.data.data_distributor import ShardDistributor, DirichletDistributor, PipeDistributor
+from apps.sequential_fed.unused.main_def import run
+from src.data.data_distributor import ShardDistributor, DirichletDistributor
 from easydict import EasyDict as edict
 from itertools import product
 

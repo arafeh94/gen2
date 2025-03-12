@@ -22,7 +22,7 @@ class BasePlotter(FederatedSubscriber):
 
     def on_round_end(self, params):
         context = params['context']
-        if context.round_id % self.plot_ratio == 0:
+        if context.round_id > 0 and (context.round_id % self.plot_ratio == 0):
             plot = self.round_plot(params)
             self.execute(plot, context)
 

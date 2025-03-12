@@ -34,6 +34,9 @@ class Server:
     def infer(self):
         return funcs.infer(self.server_model, self.client_model, self.test_data)
 
+    def infer2(self):
+        return funcs.infer2(self.server_model, self.client_model, self.test_data)
+
     def copy(self):
         server_model = copy.deepcopy(self.server_model)
         client_model = copy.deepcopy(self.client_model)

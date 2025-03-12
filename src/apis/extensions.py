@@ -5,6 +5,7 @@ import pickle
 import typing
 from abc import abstractmethod, ABC
 from time import sleep
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score
 
 import dill as dill
 import numpy as np
@@ -276,6 +277,44 @@ class TorchModel:
                 test_total += target.size(0)
 
         return test_acc / test_total, test_loss / test_total
+
+    def infer2(self, batched, **kwargs):
+        verbose = kwargs.get('verbose', 1)
+        model = self.model
+        device = kwargs['device'] if 'device' in kwargs else ('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(device)
+        model.eval()
+        test_loss = test_acc = test_total = 0.
+        criterion = nn.CrossEntropyLoss()
+
+        all_targets = []
+        all_predictions = []
+
+        with torch.no_grad():
+            iterator = tqdm.tqdm(enumerate(batched), 'inferring', disable=verbose == 0)
+            for batch_idx, (x, target) in iterator:
+                x = x.to(device)
+                target = target.to(device)
+                pred = model(x)
+                loss = criterion(pred, target)
+                _, predicted = torch.max(pred, -1)
+                correct = predicted.eq(target).sum()
+
+                test_acc += correct.item()
+                test_loss += loss.item() * target.size(0)
+                test_total += target.size(0)
+
+                all_targets.extend(target.cpu().numpy())
+                all_predictions.extend(predicted.cpu().numpy())
+
+        accuracy = test_acc / test_total
+        avg_loss = test_loss / test_total
+
+        precision = precision_score(all_targets, all_predictions, average='weighted')
+        recall = recall_score(all_targets, all_predictions, average='weighted')
+        f1 = f1_score(all_targets, all_predictions, average='weighted')
+
+        return accuracy, avg_loss, {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1}
 
     def log(self, msg, level=1):
         self.logger.info(msg)

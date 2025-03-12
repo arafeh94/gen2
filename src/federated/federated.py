@@ -94,22 +94,22 @@ class FederatedLearning(Broadcaster):
             global_weights = self.aggregator.aggregate(trainers_weights, sample_size_dict, self.context.round_id)
             temporary_model = self.context.model_copy(global_weights)
             self.broadcast(Events.ET_AGGREGATION_END, global_weights=global_weights, global_model=self.context.model)
-            accuracy, loss, local_acc, local_loss = self.infer(temporary_model, self.test_data)
+            global_metrics, local_metrics = self.infer(temporary_model, self.test_data)
+            accuracy = global_metrics['acc']
             model_status = self.context.update_model(temporary_model, accuracy, self.aam)
             self.broadcast(Events.ET_MODEL_STATUS, model_status=model_status, accuracy=accuracy)
             accuracy = accuracy if model_status else self.context.highest_accuracy()
-            self.context.store(acc=accuracy, loss=loss, local_acc=local_acc, local_loss=local_loss, status=model_status)
-            self.broadcast(Events.ET_ROUND_FINISHED, round=self.context.round_id, accuracy=accuracy, loss=loss,
-                           local_acc=local_acc, local_loss=local_loss)
+            self.context.store(status=model_status, local_metrics=local_metrics, **global_metrics)
+            self.broadcast(Events.ET_ROUND_FINISHED, round=self.context.round_id, accuracy=accuracy,
+                           metrics=global_metrics, local_metrics=local_metrics)
         else:
             if self.zero_client_exception:
                 raise Exception('no client selected for the current rounds')
             self.broadcast(Events.ET_MODEL_STATUS, model_status=False, accuracy=0)
             accuracy = self.context.latest_accuracy()
-            loss = self.context.latest_loss()
-            self.context.store(acc=accuracy, loss=loss, local_acc={}, local_loss={}, status=False)
-            self.broadcast(Events.ET_ROUND_FINISHED, round=self.context.round_id, accuracy=accuracy, loss=loss,
-                           local_acc={}, local_loss={})
+            self.context.store(acc=accuracy, metrics={}, local_metrics={}, status=False)
+            self.broadcast(Events.ET_ROUND_FINISHED, round=self.context.round_id, accuracy=accuracy, metrics={},
+                           local_metrics={})
 
         self.context.new_round()
         is_done = self.context.stop(self, accuracy)
@@ -127,24 +127,30 @@ class FederatedLearning(Broadcaster):
 
     def infer(self, model, test_data: Dict[int, DataContainer] or DataContainer):
         if isinstance(test_data, DataContainer):
-            acc, loss = self.metrics.infer(model, test_data)
-            self.context.store(acc=acc, loss=loss, local_acc=[], local_loss=[])
-            return acc, loss, {}, {}
+            metrics = self.metrics.infer(model, test_data)
+            return metrics, {}
         else:
-            local_accuracy = {}
-            local_loss = {}
+            local_metrics = {}
             sample_size = {}
+
             for trainer_id, test_data in test_data.items():
                 if trainer_id in self.context.last_entry()['selected']:
-                    acc, loss = self.metrics.infer(model, test_data)
-                    local_accuracy[trainer_id] = acc
-                    local_loss[trainer_id] = loss
+                    local_metrics[trainer_id] = self.metrics.infer(model, test_data)
                     sample_size[trainer_id] = len(test_data)
-            weighted_accuracy = [local_accuracy[tid] * sample_size[tid] for tid in local_accuracy]
-            weighted_loss = [local_loss[tid] * sample_size[tid] for tid in local_loss]
-            total_accuracy = sum(weighted_accuracy) / sum(sample_size.values())
-            total_loss = sum(weighted_loss) / sum(sample_size.values())
-            return total_accuracy, total_loss, local_accuracy, local_loss
+
+            weighted_metrics = {}
+            total_metrics = {}
+
+            for trainer_id, metrics in local_metrics.items():
+                for metric_name, value in metrics.items():
+                    if metric_name not in weighted_metrics:
+                        weighted_metrics[metric_name] = []
+                    weighted_metrics[metric_name].append(value * sample_size[trainer_id])
+
+            for metric_name, values in weighted_metrics.items():
+                total_metrics[metric_name] = sum(values) / sum(sample_size.values())
+
+            return total_metrics, local_metrics
 
     def compare(self, other, verbose=1):
         local_history = self.context.history

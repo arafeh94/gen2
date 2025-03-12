@@ -94,5 +94,6 @@ class SQLoggerCustom(FederatedSubscriber):
             round_times.append(self.clients[selected_client].exec_time())
         round_time = max(round_times)
         self.logger.log(context.round_id, acc=last_record['acc'], loss=last_record['loss'],
+                        precision=last_record['precision'], recall=last_record['recall'], f1_score=last_record['f1'],
                         round_time=round_time, cluster_time=round_times, clients_time=round_times,
                         cluster_selection_size=1, speed=1, round_num=context.round_id, iter_num=1)

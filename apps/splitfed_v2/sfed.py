@@ -26,7 +26,7 @@ utils.enable_logging(level=logging.INFO)
 random.seed(42)
 configs = Dict(json.loads(sys.argv[1])) if len(sys.argv) > 1 else Dict({'name': 'federated'})
 print(configs)
-logger = SQLiteLogger.new_instance('splitlearn_v2_1.sqlite', configs)
+logger = SQLiteLogger.new_instance('splitlearn_v3.sqlite', configs)
 printer = logging.getLogger('federated')
 # configs
 rounds = configs.get('rounds', global_configs['rounds'])
@@ -55,12 +55,14 @@ federated = FederatedLearning(
     trainer_manager=trainer_manager,
     trainer_config=trainer_params,
     aggregator=aggregators.AVGAggregator(),
-    metrics=metrics.AccLoss(batch_size=batch, criterion='cel'),
+    metrics=metrics.F1(batch_size=batch, criterion='cel'),
     client_selector=client_selectors.All(),
-    trainers_data_dict=clients_data,
+    trainers_data_dict=Dict(clients_data),
+    test_data=test_data,
     initial_model=model,
     num_rounds=rounds,
 )
+
 FederatedLogger([Events.ET_TRAINER_SELECTED, Events.ET_ROUND_FINISHED]).attach(federated)
 federated.add_subscriber(SQLoggerCustom(logger, clients))
 # federated.add_subscriber(Resumable(IODict(f'./cached_models.cs'), key=f'b{hashed_args}'))

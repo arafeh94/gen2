@@ -26,6 +26,16 @@ class Random(ClientSelector):
         return selected_trainers
 
 
+class TrustSelector(ClientSelector):
+    def __init__(self):
+        pass
+
+    def select(self, trainer_ids: List[int], context: FederatedLearning.Context) -> List[int]:
+        selected_clients = None
+        # develop trust based client selector
+        return selected_clients
+
+
 class ClusterSelector(ModelBasedClientSelector):
     def __init__(self, selection_size, cluster_count):
         super().__init__()

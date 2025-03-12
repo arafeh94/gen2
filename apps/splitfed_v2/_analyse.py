@@ -8,7 +8,7 @@ from src.apis import utils
 from src.apis.db_graph_tools import Graphs
 from src.apis.fed_sqlite import FedDB
 
-graphs = Graphs(FedDB('splitlearn_v2.sqlite'))
+graphs = Graphs(FedDB('splitlearn_v3.sqlite'))
 
 ax_configs = {
     './sfed.py': {'color': 'm', 'label': 'Fed', 'linestyle': "-", 'linewidth': 3.2},
@@ -19,7 +19,13 @@ ax_configs = {
     './splitfed2layers_selection_v1.py': {'color': 'm', 'label': '2Lo1', 'linestyle': "-", 'linewidth': 3.2},
     './splitfed2layers_standard.py': {'color': 'c', 'label': '2Ls', 'linestyle': "--", 'linewidth': 3.2},
     './splitfed2layers_standard_v1.py': {'color': 'k', 'label': '2Ls1', 'linestyle': "--", 'linewidth': 3.2},
+    './sfed_prox.py': {'color': 'k', 'label': 'FedProx', 'linestyle': "-.", 'linewidth': 3.2},
 }
+
+# save_tag = './figs/mnist_'
+save_tag = None
+show_img = True
+ticks = 0
 
 
 def log_transform(dt):
@@ -30,12 +36,15 @@ def log_transform(dt):
 
 
 def plt_config(plt):
+    global ticks
     plt.grid(True, linestyle='--', alpha=0.5)
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=8, fontsize='large')
-    plt.rcParams.update({'font.size': 12})
-    plt.gca().tick_params(axis='both', which='major', labelsize='large')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=8, fontsize='xx-large' if not ticks else 'large')
+    plt.rcParams.update({'font.size': 14})
+    plt.gca().tick_params(axis='both', which='major', labelsize='x-large' if not ticks else 'large')
+    # plt.xlim(0, 6000)
     for spine in plt.gca().spines.values():
         spine.set_edgecolor('gray')
+    ticks += 1
 
 
 def acc(sessions, trans=None):
@@ -48,7 +57,50 @@ def acc(sessions, trans=None):
             'query': f'select max(acc) as acc from {session} group by round_num',
             'config': ax_configs[exp_code]
         })
-    graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Accuracy', plt_func=plt_config)
+    return graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Accuracy', plt_func=plt_config,
+                       save_path=save_tag + 'acc.png' if save_tag else None, show=show_img)
+
+
+def f1(sessions, trans=None):
+    configurations = []
+    for exp_code, session in sessions.items():
+        configurations.append({
+            'session_id': session,
+            'transform': trans,
+            'field': 'round_time',
+            'query': f'select max(f1) as acc from {session} group by round_num',
+            'config': ax_configs[exp_code]
+        })
+    return graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='F1', plt_func=plt_config,
+                       save_path=save_tag + 'f1.png' if save_tag else None, show=show_img)
+
+
+def precision(sessions, trans=None):
+    configurations = []
+    for exp_code, session in sessions.items():
+        configurations.append({
+            'session_id': session,
+            'transform': trans,
+            'field': 'round_time',
+            'query': f'select max(precision) as acc from {session} group by round_num',
+            'config': ax_configs[exp_code]
+        })
+    return graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Precision', plt_func=plt_config,
+                       save_path=save_tag + 'precision.png' if save_tag else None, show=show_img)
+
+
+def recall(sessions, trans=None):
+    configurations = []
+    for exp_code, session in sessions.items():
+        configurations.append({
+            'session_id': session,
+            'transform': trans,
+            'field': 'round_time',
+            'query': f'select max(recall) as acc from {session} group by round_num',
+            'config': ax_configs[exp_code]
+        })
+    return graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Recall', plt_func=plt_config,
+                       save_path=save_tag + 'recall.png' if save_tag else None, show=show_img)
 
 
 def time(sessions, trans=None):
@@ -61,7 +113,8 @@ def time(sessions, trans=None):
             'query': f'select max(round_time) as round_time from {session} group by round_num',
             'config': ax_configs[exp_code]
         })
-    graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Exec Time', plt_func=plt_config)
+    return graphs.plot(configurations, 'Plot', xlabel='Rounds', ylabel='Exec Time', plt_func=plt_config,
+                       save_path=save_tag + 'time.png' if save_tag else None, show=show_img)
 
 
 def time2acc(sessions, trans=None):
@@ -73,9 +126,53 @@ def time2acc(sessions, trans=None):
         acc_dt = trans(acc_dt) if trans else acc_dt
         time_dt = [0] + [d[1] / 1000 for d in data]
         time_cumulative = np.cumsum(time_dt)
+
+        if 'split.py' in ex_code:
+            inset_point = 1000
+            out = {
+                table: {
+                    'x': time_cumulative[inset_point:len(time_cumulative)] / 1000,
+                    'y': acc_dt[inset_point:len(time_cumulative)],
+                    'config': ax_configs[ex_code]
+                }
+            }
+            time_cumulative = time_cumulative[0:inset_point]
+            acc_dt = acc_dt[0:inset_point]
+            graphs.plot2(out, 'time2acc', xlabel='Cumulative Time (*1000)', ylabel='Accuracy', show=show_img,
+                         plt_func=plt_config, save_path=save_tag + 'time2acc_split.png' if save_tag else None)
         sessions_val[table] = {'x': time_cumulative, 'y': acc_dt, 'config': ax_configs[ex_code]}
-    graphs.plot2(sessions_val, 'time2acc', xlabel='Cumulative Time', ylabel='Accuracy',
-                 plt_func=plt_config)
+    return graphs.plot2(sessions_val, 'time2acc', xlabel='Cumulative Time', ylabel='Accuracy', show=show_img,
+                        plt_func=plt_config, save_path=save_tag + 'time2acc.png' if save_tag else None)
+
+
+def time2(sessions, trans=None, field='acc'):
+    sessions_val = {}
+    for ex_code, table in sessions.items():
+        query_str = f"select max({field}) as {field}, max(round_time) as round_time from {table} group by round_num"
+        data = graphs.db().query(query_str)
+        acc_dt = [0] + [d[0] for d in data]
+        acc_dt = trans(acc_dt) if trans else acc_dt
+        time_dt = [0] + [d[1] / 1000 for d in data]
+        time_cumulative = np.cumsum(time_dt)
+
+        if 'split.py' in ex_code:
+            inset_point = 1000
+            out = {
+                table: {
+                    'x': time_cumulative[inset_point:len(time_cumulative)] / 1000,
+                    'y': acc_dt[inset_point:len(time_cumulative)],
+                    'config': ax_configs[ex_code]
+                }
+            }
+            time_cumulative = time_cumulative[0:inset_point]
+            acc_dt = acc_dt[0:inset_point]
+            graphs.plot2(out, f'time2{field}', xlabel='Cumulative Time (*1000)', ylabel=f'{field}'.capitalize(),
+                         show=show_img, plt_func=plt_config,
+                         save_path=save_tag + f'time2{field}_split.png' if save_tag else None)
+        sessions_val[table] = {'x': time_cumulative, 'y': acc_dt, 'config': ax_configs[ex_code]}
+    return graphs.plot2(sessions_val, f'time2{field}', xlabel='Cumulative Time', ylabel=f'{field}'.capitalize(),
+                        show=show_img, plt_func=plt_config,
+                        save_path=save_tag + f'time2{field}.png' if save_tag else None)
 
 
 def generate_exps(session_ids, filter=None):
@@ -155,20 +252,25 @@ def deny(items):
 
 
 def standard(ss):
-    acc(generate_exps(ss), utils.smooth)
-    time2acc(generate_exps(ss), utils.smooth)
-    time(generate_exps(ss), utils.smooth)
+    # ops = [acc, time2acc, time]
+    ops = [acc, f1, recall, precision]
+    for op in ops:
+        op(generate_exps(ss), utils.smooth)
+
+
+def time_only(ss):
+    fields = ['f1', 'acc', 'precision', 'recall']
+    for field in fields:
+        time2(generate_exps(ss), utils.smooth, field)
 
 
 if __name__ == '__main__':
     code_exp = ['split', 'splitfed', '1layer', '2layers_selection', '2layers_selection_v1',
-                '2layers_standard', '2layers_standard_v1']
+                '2layers_standard', '2layers_standard_v1', 'fed_prox']
     # mnist
-    # ss = collect({'tag': 'exp1'})
-    # ss = collect({'tag': 'exp1', 'name': lambda x: x != './split.py'})
+    ss = collect({'tag': 'mnist_new_exp_2'})
 
     # cifar
-    ss = collect({'tag': 'cifar_exo1'})
-    standard(ss)
-
+    # ss = collect({'tag': 'cifar_exo1'})
     # standard(ss)
+    standard(ss)

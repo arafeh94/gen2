@@ -184,11 +184,11 @@ if __name__ == '__main__':
     # runs = collect({'tag': '15', 'method': lambda x: x != 'ewc_ga'})
 
     # ------ for kdd shard
-    # runs = collect({'tag': '32', 'method': lambda x: x != 'ewc_ga'})
-    # runs = [r for r in runs if r != 't1710215848']
+    runs = collect({'tag': '32', 'method': lambda x: x != 'ewc_ga'})
+    runs = [r for r in runs if r != 't1710215848']
 
     # ------ kdd dirichlet
-    runs = collect({'tag': 'pb3', 'method': lambda x: x != 'ewc_ga'})
+    # runs = collect({'tag': 'pb3', 'method': lambda x: x != 'ewc_ga'})
 
     # wmp(collect({'tag': 'wmp01'}), utils.smooth)
     # standard(collect({'tag': '32'}), lambda name, item: 'warmup' not in name and 'ewc_ga' not in name, save='kdd_shard')

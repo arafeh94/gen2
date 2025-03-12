@@ -34,5 +34,4 @@ graphs.plot([
         'field': 'acc',
         'config': {'color': 'r'}
     },
-
 ])

@@ -55,7 +55,7 @@ class CPUTrainer(TorchTrainer):
         self.device = 'cpu'
 
 
-class TorchChunkTrainer(TorchTrainer):
+class ContinualTrainer(TorchTrainer):
     def train(self, model: nn.Module, train_data: DataContainer, context: FederatedLearning.Context,
               config: TrainerParams, chunk_ratio=0.1) -> Tuple[any, int]:
         round_id = context.round_id
@@ -66,4 +66,3 @@ class TorchChunkTrainer(TorchTrainer):
         y = train_data.y[data_from:data_to]
         chunk = DataContainer(x, y)
         return super(TorchChunkTrainer, self).train(model, chunk, context, config)
-

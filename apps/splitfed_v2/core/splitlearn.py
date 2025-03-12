@@ -34,7 +34,7 @@ def one_round(cls, srvr, epoch=1):
         avg_weights = aggregate(weights, cls_samples)
         # client_cluster.model.load_state_dict(avg_weights)
         srvr.client_model.load_state_dict(avg_weights)
-    return srvr.infer()
+    return srvr.infer2()
 
 
 def one_round_async(cls, srvr: Server, epoch=1):
@@ -59,9 +59,11 @@ def one_round_async(cls, srvr: Server, epoch=1):
         client_cluster.model.load_state_dict(avg_cls_weights)
         srvr.client_model.load_state_dict(avg_cls_weights)
         srvr.server_model.load_state_dict(avg_srv_weights)
-    return srvr.infer()
+    return srvr.infer2()
 
 
+# cls is a multi-cluster list where each cluster represent a separate clients' speed
+# selection only assign if a client will run or not
 def one_round_resource(cls, srvr, is_parallel=True, is_selection=True, bad_ratio=.05, epoch=1):
     clusters_time = []
     cluster_clients_time = []
@@ -79,9 +81,11 @@ def one_round_resource(cls, srvr, is_parallel=True, is_selection=True, bad_ratio
         clusters_time.append(time_taken)
         cluster_clients_time.append(clients_time)
         cluster_clients_size.append(len(clients_time))
-    accuracy, loss = one_round_async(cls, srvr, epoch) if is_parallel else one_round(cls, srvr, epoch)
-    return {'acc': accuracy, 'loss': loss, 'round_time': sum(clusters_time), 'clusters_time': clusters_time,
-            'clients_time': str(cluster_clients_time), 'cluster_selection_size': str(cluster_clients_size)}
+    accuracy, loss, precision, recall, f1 = one_round_async(cls, srvr, epoch) if is_parallel \
+        else one_round(cls, srvr, epoch)
+    return {'acc': accuracy, 'loss': loss, 'precision': precision, 'recall': recall, 'f1': f1,
+            'round_time': sum(clusters_time), 'clusters_time': clusters_time, 'clients_time': str(cluster_clients_time),
+            'cluster_selection_size': str(cluster_clients_size)}
 
 
 def crossgregate(advanced, late, staled_round):

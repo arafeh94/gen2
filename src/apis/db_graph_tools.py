@@ -4,6 +4,7 @@ from typing import Callable
 
 import numpy as np
 from matplotlib import pyplot as plt, pyplot
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from src.apis.fed_sqlite import FedDB
 
@@ -80,7 +81,7 @@ class Graphs:
             round_id = 0
             session_plot_values = defaultdict(list)
             while False in session_end:
-                for session_id, field, config, transform in sessions:
+                for session_id, field, config, transform, where, query in sessions:
                     try:
                         session_plot_values[f'{session_id}_{field}_{str(transform)}'].append(
                             session_values[f'{session_id}_{field}_{str(transform)}'][round_id])
@@ -110,11 +111,17 @@ class Graphs:
         plt.clf()
         for session_id, vals in sessions.items():
             plt.plot(vals['x'], vals['y'], **vals['config'] if 'config' in vals else {})
+        #
+        if callable(plt_func):
+            plt_func(plt)
+        plt.xlabel(xlabel, fontsize='large', labelpad=5)
+        plt.ylabel(ylabel, fontsize='large', labelpad=5)
 
         if callable(plt_func):
             plt_func(plt)
         plt.xlabel(xlabel, fontsize='large', labelpad=5)
         plt.ylabel(ylabel, fontsize='large', labelpad=5)
+
         fig = plt.gcf()
         fig.set_size_inches(16, 8)
         if save_path:
@@ -122,4 +129,3 @@ class Graphs:
         if show:
             plt.show()
         return plt
-

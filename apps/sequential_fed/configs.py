@@ -8,29 +8,6 @@ from src.apis import utils
 from src.data.data_distributor import ShardDistributor, DirichletDistributor
 from src.data.data_loader import preload
 
-# distributor = PipeDistributor(
-#     [
-#         PipeDistributor.pick_by_label_id([1, 2, 4], 1000, 6),
-#         PipeDistributor.pick_by_label_id([1, 2, 8], 1000, 6),
-#         PipeDistributor.pick_by_label_id([4, 5, 8], 1000, 6),
-#         PipeDistributor.pick_by_label_id([5, 6, 7, 8], 4000, 4),
-#         PipeDistributor.pick_by_label_id([6, 7], 2000, 5),
-#         PipeDistributor.pick_by_label_id([7, 8], 2000, 5),
-#         PipeDistributor.pick_by_label_id([0], 200, 15),
-#         PipeDistributor.pick_by_label_id([1], 200, 15),
-#         PipeDistributor.pick_by_label_id([2], 200, 15),
-#         PipeDistributor.pick_by_label_id([3], 200, 15),
-#         PipeDistributor.pick_by_label_id([4], 200, 15),
-#         PipeDistributor.pick_by_label_id([5], 200, 15),
-#         PipeDistributor.pick_by_label_id([6], 200, 15),
-#         PipeDistributor.pick_by_label_id([7], 200, 15),
-#         PipeDistributor.pick_by_label_id([8], 200, 15),
-#         PipeDistributor.pick_by_label_id([9], 200, 15),
-#     ], tag='t1'
-# )
-# distributor = DirichletDistributor(150, 10, 0.1)
-# distributor = ShardDistributor(400, 1)
-
 parameters = {
     'selector': [{'rand': ['cr']}, {'ga': [{'buffer': ['proba', 'pop']}, 'cls', 'ppl']}, 'all'],
     'warmup': ['data_ratio', 'epochs', 'lr'],
@@ -40,12 +17,12 @@ parameters = {
 
 cr = 10
 wlr = 0.01
-we = 20
-wr = 32
+we = 2
+wr = 2
 dt = 'mnist'
 cls = 10
 buffer = 'pop'
-exp_tag = 'wmp01'
+exp_tag = 'add01'
 # distributor = ShardDistributor(400, 1)
 distributor = DirichletDistributor(100, 21, 0.1)
 
